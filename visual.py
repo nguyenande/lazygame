@@ -1,24 +1,28 @@
 import pygame
 import sys
 import random
+import math
 
-# Initialize Pygame
 pygame.init()
 
-WIDTH, HEIGHT = 600, 400
+WIDTH, HEIGHT = 1000, 700
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Rock Paper Scissors Bounce")
 
-WHITE = (255, 255, 255)
+BLACK = (255, 255, 255)
+WHITE = (0, 0, 0)
 
 ROCK = 'rock'
 PAPER = 'paper'
 SCISSORS = 'scissors'
 
 SPEED = 3
+MARGIN = 140  # margin from edges for starting positions
+
+font = pygame.font.SysFont(None, 40)
 
 class Piece:
-    RADIUS = 20
+    RADIUS = 10
 
     def __init__(self, kind, x, y, dx, dy):
         self.kind = kind
@@ -40,43 +44,42 @@ class Piece:
         pygame.draw.circle(screen, color, (int(self.x), int(self.y)), self.RADIUS)
 
     def collide(self, other):
-        dist = ((self.x - other.x)**2 + (self.y - other.y)**2)**0.5
+        dist = math.hypot(self.x - other.x, self.y - other.y)
         return dist <= 2 * self.RADIUS
 
     def transform(self, other):
-        # rock touches paper -> rock becomes paper
         if self.kind == ROCK and other.kind == PAPER:
             self.kind = PAPER
-        # rock touches scissors -> scissors becomes rock
         elif self.kind == ROCK and other.kind == SCISSORS:
             other.kind = ROCK
-        # paper touches scissors -> paper becomes scissors
         elif self.kind == PAPER and other.kind == SCISSORS:
             self.kind = SCISSORS
-        # paper touches rock -> rock becomes paper
         elif self.kind == PAPER and other.kind == ROCK:
             other.kind = PAPER
-        # scissors touches rock -> scissors becomes rock
         elif self.kind == SCISSORS and other.kind == ROCK:
             self.kind = ROCK
-        # scissors touches paper -> paper becomes scissors
         elif self.kind == SCISSORS and other.kind == PAPER:
             other.kind = SCISSORS
 
-def create_pieces(kind, count, x_range, y_range):
+def random_velocity(speed):
+    angle = random.uniform(0, 2 * math.pi)
+    dx = math.cos(angle) * speed
+    dy = math.sin(angle) * speed
+    return dx, dy
+
+def create_pieces(kind, count, start_x, start_y, spread_x=50, spread_y=50):
     pieces = []
-    for _ in range(count):
-        x = random.randint(x_range[0], x_range[1])
-        y = random.randint(y_range[0], y_range[1])
-        dx = random.choice([-SPEED, SPEED])
-        dy = random.choice([-SPEED, SPEED])
+    for i in range(count):
+        x = start_x + (i % 5) * spread_x - (spread_x * 2)
+        y = start_y + (i // 5) * spread_y
+        dx, dy = random_velocity(SPEED)
         pieces.append(Piece(kind, x, y, dx, dy))
     return pieces
 
 pieces = []
-pieces.extend(create_pieces(PAPER, 10, (50, WIDTH - 50), (50, HEIGHT - 50)))
-pieces.extend(create_pieces(SCISSORS, 10, (50, WIDTH - 50), (50, HEIGHT - 50)))
-pieces.extend(create_pieces(ROCK, 10, (50, WIDTH - 50), (50, HEIGHT - 50)))
+pieces.extend(create_pieces(PAPER, 10, WIDTH // 2, MARGIN // 2))
+pieces.extend(create_pieces(ROCK, 10, MARGIN, HEIGHT - MARGIN))
+pieces.extend(create_pieces(SCISSORS, 10, WIDTH - MARGIN, HEIGHT - MARGIN))
 
 clock = pygame.time.Clock()
 running = True
@@ -97,6 +100,14 @@ while running:
             if pieces[i].collide(pieces[j]):
                 pieces[i].transform(pieces[j])
                 pieces[j].transform(pieces[i])
+
+    rock_count = sum(p.kind == ROCK for p in pieces)
+    paper_count = sum(p.kind == PAPER for p in pieces)
+    scissors_count = sum(p.kind == SCISSORS for p in pieces)
+
+    screen.blit(font.render(f"Rock: {rock_count}", True, BLACK), (10, 10))
+    screen.blit(font.render(f"Paper: {paper_count}", True, BLACK), (10, 40))
+    screen.blit(font.render(f"Scissors: {scissors_count}", True, BLACK), (10, 70))
 
     pygame.display.flip()
     clock.tick(60)
