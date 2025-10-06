@@ -1,0 +1,6 @@
+name: game
+channels:
+  - conda-forge
+dependencies:
+  - python=3.13.7
+  - pygame
