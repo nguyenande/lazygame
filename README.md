@@ -15,4 +15,4 @@
 ```conda activate game```
 
 ### Run script 
-```Some shit we have to make later```
+```python visual.py```
