@@ -16,7 +16,7 @@ ROCK = 'rock'
 PAPER = 'paper'
 SCISSORS = 'scissors'
 
-SPEED = 3
+SPEED = 2
 MARGIN = 140  # margin from edges for starting positions
 
 font = pygame.font.SysFont(None, 40)
@@ -40,8 +40,65 @@ class Piece:
             self.dy *= -1
 
     def draw(self):
-        color = (139, 69, 19) if self.kind == ROCK else (135, 206, 250) if self.kind == PAPER else (192, 192, 192)
-        pygame.draw.circle(screen, color, (int(self.x), int(self.y)), self.RADIUS)
+        if self.kind == PAPER:
+            # white rectangle with black border for paper
+            rect_width = self.RADIUS * 2
+            rect_height = self.RADIUS * 3
+            rect_x = int(self.x - rect_width / 2)
+            rect_y = int(self.y - rect_height / 2)
+            pygame.draw.rect(screen, (255, 255, 255), (rect_x, rect_y, rect_width, rect_height))
+            pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), 2)
+        elif self.kind == ROCK:
+            # gray bumpy circle for rock (as before)
+            base_radius = self.RADIUS
+            center = (int(self.x), int(self.y))
+            pygame.draw.circle(screen, (169, 169, 169), center, base_radius)
+            bump_count = 12
+            bump_radius = 3
+            for i in range(bump_count):
+                angle = (2 * math.pi / bump_count) * i
+                offset = random.randint(-2, 2)
+                bump_x = int(self.x + (base_radius + offset) * math.cos(angle))
+                bump_y = int(self.y + (base_radius + offset) * math.sin(angle))
+                pygame.draw.circle(screen, (105, 105, 105), (bump_x, bump_y), bump_radius)
+        else:
+            # scissors with red handles and silver blades
+            center = (int(self.x), int(self.y))
+            blade_length = self.RADIUS * 2
+            blade_width = 4
+
+            # Calculate blade end points (two lines crossing)
+            # Blade 1
+            angle1 = math.radians(30)
+            x1_start = self.x + math.cos(angle1) * 0
+            y1_start = self.y + math.sin(angle1) * 0
+            x1_end = self.x + math.cos(angle1) * blade_length
+            y1_end = self.y + math.sin(angle1) * blade_length
+
+            # Blade 2
+            angle2 = math.radians(150)
+            x2_start = self.x + math.cos(angle2) * 0
+            y2_start = self.y + math.sin(angle2) * 0
+            x2_end = self.x + math.cos(angle2) * blade_length
+            y2_end = self.y + math.sin(angle2) * blade_length
+
+            # Draw blades (silver)
+            silver = (192, 192, 192)
+            pygame.draw.line(screen, silver, (x1_start, y1_start), (x1_end, y1_end), blade_width)
+            pygame.draw.line(screen, silver, (x2_start, y2_start), (x2_end, y2_end), blade_width)
+
+            # Draw handles as red circles near center base of each blade
+            red = (200, 0, 0)
+            handle_radius = self.RADIUS // 2
+
+            # Position handles slightly offset from center along blade base directions
+            offset_dist = handle_radius
+            handle1_pos = (int(self.x + math.cos(angle1) * offset_dist), int(self.y + math.sin(angle1) * offset_dist))
+            handle2_pos = (int(self.x + math.cos(angle2) * offset_dist), int(self.y + math.sin(angle2) * offset_dist))
+
+            pygame.draw.circle(screen, red, handle1_pos, handle_radius)
+            pygame.draw.circle(screen, red, handle2_pos, handle_radius)
+
 
     def collide(self, other):
         dist = math.hypot(self.x - other.x, self.y - other.y)
