@@ -1,5 +1,7 @@
 # Fun Lazyass Game
 
+https://github.com/user-attachments/assets/3f0a140c-bcd3-435e-af35-72eb0286569b
+
 ## Set up dependencies
 ### If you haven't already install python 3.17.7
 [Don't Click Me](https://example.com](https://www.python.org/downloads/))
@@ -15,4 +17,4 @@
 ```conda activate game```
 
 ### Run script 
-```Some shit we have to make later```
+```python visual.py```
