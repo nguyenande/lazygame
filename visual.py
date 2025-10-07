@@ -3,11 +3,41 @@ import sys
 import random
 import math
 
+
+# Pygame-based menu for player choice
+def get_player_choice():
+    menu_font = pygame.font.SysFont(None, 60)
+    small_font = pygame.font.SysFont(None, 36)
+    prompt = menu_font.render("Choose your piece:", True, (0, 0, 0))
+    options = [
+        ("Rock (R)", ROCK),
+        ("Paper (P)", PAPER),
+        ("Scissors (S)", SCISSORS)
+    ]
+    while True:
+        screen.fill((255, 255, 255))
+        screen.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, HEIGHT // 2 - 120))
+        for i, (label, _) in enumerate(options):
+            text = small_font.render(label, True, (0, 0, 0))
+            screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 - 30 + i * 50))
+        pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    return ROCK
+                elif event.key == pygame.K_p:
+                    return PAPER
+                elif event.key == pygame.K_s:
+                    return SCISSORS
+
 pygame.init()
 
 WIDTH, HEIGHT = 1000, 700
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Rock Paper Scissors Bounce")
+pygame.display.set_caption("Rock Paper Scissors Survival")
 
 BLACK = (255, 255, 255)
 WHITE = (0, 0, 0)
@@ -49,18 +79,21 @@ class Piece:
             pygame.draw.rect(screen, (255, 255, 255), (rect_x, rect_y, rect_width, rect_height))
             pygame.draw.rect(screen, (0, 0, 0), (rect_x, rect_y, rect_width, rect_height), 2)
         elif self.kind == ROCK:
-            # gray bumpy circle for rock (as before)
+            # Draw an irregular polygon to represent a rock
             base_radius = self.RADIUS
             center = (int(self.x), int(self.y))
-            pygame.draw.circle(screen, (169, 169, 169), center, base_radius)
-            bump_count = 12
-            bump_radius = 3
-            for i in range(bump_count):
-                angle = (2 * math.pi / bump_count) * i
-                offset = random.randint(-2, 2)
-                bump_x = int(self.x + (base_radius + offset) * math.cos(angle))
-                bump_y = int(self.y + (base_radius + offset) * math.sin(angle))
-                pygame.draw.circle(screen, (105, 105, 105), (bump_x, bump_y), bump_radius)
+            num_points = 3
+            angle_offset = random.uniform(0, 2 * math.pi)
+            points = []
+            for i in range(num_points):
+                angle = angle_offset + (2 * math.pi / num_points) * i
+                # Vary the radius for jaggedness
+                radius = base_radius + random.randint(-3, 3)
+                px = int(self.x + radius * math.cos(angle))
+                py = int(self.y + radius * math.sin(angle))
+                points.append((px, py))
+            pygame.draw.polygon(screen, (169, 169, 169), points)
+
         else:
             # scissors with red handles and silver blades
             center = (int(self.x), int(self.y))
@@ -133,41 +166,102 @@ def create_pieces(kind, count, start_x, start_y, spread_x=50, spread_y=50):
         pieces.append(Piece(kind, x, y, dx, dy))
     return pieces
 
+
+# Create AI pieces
 pieces = []
 pieces.extend(create_pieces(PAPER, 10, WIDTH // 2, MARGIN // 2))
 pieces.extend(create_pieces(ROCK, 10, MARGIN, HEIGHT - MARGIN))
 pieces.extend(create_pieces(SCISSORS, 10, WIDTH - MARGIN, HEIGHT - MARGIN))
 
+# Create player piece
+player_kind = get_player_choice()
+player = Piece(player_kind, WIDTH // 2, HEIGHT // 2, 0, 0)
+player_speed = 4
+
 clock = pygame.time.Clock()
 running = True
+
+
+
+# Track the original player kind for game over detection
+original_player_kind = player.kind
+game_over = False
 
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    screen.fill(WHITE)
+    if not game_over:
+        # Handle player movement
+        keys = pygame.key.get_pressed()
+        dx, dy = 0, 0
+        if keys[pygame.K_LEFT]:
+            dx -= player_speed
+        if keys[pygame.K_RIGHT]:
+            dx += player_speed
+        if keys[pygame.K_UP]:
+            dy -= player_speed
+        if keys[pygame.K_DOWN]:
+            dy += player_speed
+        # Move player, keep within bounds
+        player.x = max(player.RADIUS, min(WIDTH - player.RADIUS, player.x + dx))
+        player.y = max(player.RADIUS, min(HEIGHT - player.RADIUS, player.y + dy))
 
-    for p in pieces:
-        p.move()
-        p.draw()
+        screen.fill(WHITE)
 
-    for i in range(len(pieces)):
-        for j in range(i + 1, len(pieces)):
-            if pieces[i].collide(pieces[j]):
-                pieces[i].transform(pieces[j])
-                pieces[j].transform(pieces[i])
+        # Move and draw AI pieces
+        for p in pieces:
+            p.move()
+            p.draw()
 
-    rock_count = sum(p.kind == ROCK for p in pieces)
-    paper_count = sum(p.kind == PAPER for p in pieces)
-    scissors_count = sum(p.kind == SCISSORS for p in pieces)
+        # Draw player piece (on top)
+        player.draw()
 
-    screen.blit(font.render(f"Rock: {rock_count}", True, BLACK), (10, 10))
-    screen.blit(font.render(f"Paper: {paper_count}", True, BLACK), (10, 40))
-    screen.blit(font.render(f"Scissors: {scissors_count}", True, BLACK), (10, 70))
+        # Collisions: player vs AI pieces
+        for p in pieces:
+            if player.collide(p):
+                player.transform(p)
+                p.transform(player)
 
-    pygame.display.flip()
-    clock.tick(60)
+        # Check for game over (player changed type)
+        if player.kind != original_player_kind:
+            game_over = True
+
+        # Collisions: AI pieces vs each other
+        for i in range(len(pieces)):
+            for j in range(i + 1, len(pieces)):
+                if pieces[i].collide(pieces[j]):
+                    pieces[i].transform(pieces[j])
+                    pieces[j].transform(pieces[i])
+
+        # Update counts (include player)
+        rock_count = sum(p.kind == ROCK for p in pieces) + (player.kind == ROCK)
+        paper_count = sum(p.kind == PAPER for p in pieces) + (player.kind == PAPER)
+        scissors_count = sum(p.kind == SCISSORS for p in pieces) + (player.kind == SCISSORS)
+
+        screen.blit(font.render(f"Rock: {rock_count}", True, BLACK), (10, 10))
+        screen.blit(font.render(f"Paper: {paper_count}", True, BLACK), (10, 40))
+        screen.blit(font.render(f"Scissors: {scissors_count}", True, BLACK), (10, 70))
+
+        pygame.display.flip()
+        clock.tick(60)
+    else:
+        # Game over screen
+        screen.fill((0, 0, 0))
+        over_font = pygame.font.SysFont(None, 80)
+        msg = over_font.render("Game Over!", True, (200, 0, 0))
+        screen.blit(msg, (WIDTH // 2 - msg.get_width() // 2, HEIGHT // 2 - 60))
+        info_font = pygame.font.SysFont(None, 40)
+        info = info_font.render("YOU FOOKEN LOST", True, (255, 255, 255))
+        screen.blit(info, (WIDTH // 2 - info.get_width() // 2, HEIGHT // 2 + 10))
+        pygame.display.flip()
+        # Wait for ESC or window close
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                running = False
 
 pygame.quit()
 sys.exit()
