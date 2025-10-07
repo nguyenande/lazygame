@@ -3,7 +3,7 @@
 https://github.com/user-attachments/assets/3f0a140c-bcd3-435e-af35-72eb0286569b
 
 ## Set up dependencies
-### If you haven't already install python 3.17.7
+### If you haven't already install python 3.13.7
 [Don't Click Me](https://example.com](https://www.python.org/downloads/))
 
 ### Download miniconda 
