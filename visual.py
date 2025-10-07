@@ -240,9 +240,15 @@ while running:
         paper_count = sum(p.kind == PAPER for p in pieces) + (player.kind == PAPER)
         scissors_count = sum(p.kind == SCISSORS for p in pieces) + (player.kind == SCISSORS)
 
-        screen.blit(font.render(f"Rock: {rock_count}", True, BLACK), (10, 10))
-        screen.blit(font.render(f"Paper: {paper_count}", True, BLACK), (10, 40))
-        screen.blit(font.render(f"Scissors: {scissors_count}", True, BLACK), (10, 70))
+
+        # Highlight the player's current piece counter in green
+        GREEN = (0, 180, 0)
+        rock_color = GREEN if player.kind == ROCK else BLACK
+        paper_color = GREEN if player.kind == PAPER else BLACK
+        scissors_color = GREEN if player.kind == SCISSORS else BLACK
+        screen.blit(font.render(f"Rock: {rock_count}", True, rock_color), (10, 10))
+        screen.blit(font.render(f"Paper: {paper_count}", True, paper_color), (10, 40))
+        screen.blit(font.render(f"Scissors: {scissors_count}", True, scissors_color), (10, 70))
 
         pygame.display.flip()
         clock.tick(60)
